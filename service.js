@@ -1,87 +1,101 @@
+// FUNÇÕES UTILITÁRIAS:
+// SITE DE ONDE A FUNÇÃO FOI OBTIDA: https://www.devmedia.com.br/validar-cpf-com-javascript/23916
 const validarCPF = (strCPF) => {
-   let soma;
-   let resto;
-   soma = 0;
-   if (strCPF == "00000000000") return false;
+  let soma;
+  let resto;
+  soma = 0;
+  if (strCPF === '00000000000') return false;
 
-   for (i=1; i<=9; i++) soma = soma + parseInt(strCPF.substring(i-1, i)) * (11 - i);
-   resto = (soma * 10) % 11;
+  for (let i = 1; i <= 9; i++)
+    soma = soma + parseInt(strCPF.substring(i - 1, i)) * (11 - i);
+  resto = (soma * 10) % 11;
 
-   if ((resto == 10) || (resto == 11))  resto = 0;
-   if (resto != parseInt(strCPF.substring(9, 10)) ) return false;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto != parseInt(strCPF.substring(9, 10))) return false;
 
-   soma = 0;
-   for (i = 1; i <= 10; i++) soma = soma + parseInt(strCPF.substring(i-1, i)) * (12 - i);
-   resto = (soma * 10) % 11;
+  soma = 0;
+  for (i = 1; i <= 10; i++)
+    soma = soma + parseInt(strCPF.substring(i - 1, i)) * (12 - i);
+  resto = (soma * 10) % 11;
 
-   if ((resto == 10) || (resto == 11))  resto = 0;
-   if (resto != parseInt(strCPF.substring(10, 11) ) ) return false;
-   return true;
-}
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto != parseInt(strCPF.substring(10, 11))) return false;
+  return true;
+};
 
+const recuperarLancamentosPorCpf = (lancamentos) =>
+  lancamentos.reduce((acc, curr) => {
+    if (!acc[curr.cpf]) acc[curr.cpf] = [];
+
+    acc[curr.cpf].push(curr.valor);
+    return acc;
+  }, {});
+
+// FUNÇÕES PRINCIPAIS:
 const validarEntradaDeDados = (lancamento) => {
-   const { cpf, valor } = lancamento;
+  const { cpf, valor } = lancamento;
 
-   if (isNaN(cpf)) return "CPF deve conter apenas caracteres numéricos.";
+  // CPF deve conter apenas caracteres numéricos.
+  if (isNaN(cpf)) return 'CPF deve conter apenas caracteres numéricos.';
 
-   if (!validarCPF(cpf)) return "Os dígitos verificadores do CPF devem ser válido.";
+  // Os dígitos verificadores do CPF devem ser válido.
+  if (!validarCPF(cpf))
+    return 'Os dígitos verificadores do CPF devem ser válido.';
 
-   if (typeof valor !== "number") return "Valor deve ser numérico.";
+  // Valor deve ser numérico.
+  if (typeof valor !== 'number') return 'Valor deve ser numérico.';
 
-   if (valor > 15000) return "Valor não pode ser superior a 15000,00.";
+  // Valor não pode ser superior a 15000,00.
+  if (valor > 15000) return 'Valor não pode ser superior a 15000,00.';
 
-   if (valor < -2000) return "Valor não pode ser inferior a -2000,00.";
-   return null;
-}
-
-teste = []
-teste.push({cpf:'74914372061',valor:1234.78})
-teste.push({cpf:'74914372061',valor:-123.56})
-teste.push({cpf:'74914372061',valor:-865.00})
-teste.push({cpf:'41421980096',valor:-987})
-teste.push({cpf:'41421980096',valor:123})
-teste.push({cpf:'41421980096',valor:-1225.9})
-teste.push({cpf:'05987701007',valor:1267.39})
-teste.push({cpf:'05987701007',valor:143.9})
-teste.push({cpf:'05987701007',valor:23.4})
-teste.push({cpf:'93975495022',valor:1943})
-teste.push({cpf:'93975495022',valor:8000.21})
-teste.push({cpf:'93975495022',valor:546.78})
-
-const callbackReduceSaldo = (acumulador, iterado) => {
-   if (iterado.cpf in acumulador) {
-      acumulador[iterado.cpf] += iterado.valor;
-   } else {
-      acumulador[iterado.cpf] = iterado.valor;
-   }
-   return acumulador;
-}
+  // Valor não pode ser inferior a -2000,00.
+  if (valor < -2000) return 'Valor não pode ser inferior a -2000,00.';
+  return null;
+};
 
 const recuperarSaldosPorConta = (lancamentos) => {
-   cpfEValor = lancamentos.reduce(callbackReduceSaldo ,{});
-   saldosPorConta = [];
+  cpfEValores = recuperarLancamentosPorCpf(lancamentos);
+  saldosPorConta = [];
 
-   Object.keys(cpfEValor).forEach((cpf, index) => {
-      saldosPorConta.push({
-         cpf,
-         valor: Object.values(cpfEValor)[index].toFixed(2)
-      });
-   });
-   return saldosPorConta;
-}
+  Object.keys(cpfEValores).forEach((cpf, index) => {
+    valor = Object.values(cpfEValores)
+      [index].reduce((acc, curr) => acc + curr)
+      .toFixed(2);
+    saldosPorConta.push({
+      cpf,
+      valor,
+    });
+  });
+  return saldosPorConta;
+};
 
 const recuperarMaiorMenorLancamentos = (cpf, lancamentos) => {
-   valoresDoCpf = lancamentos.filter((lancamento) => lancamento.cpf === cpf);
-   valoresDoCpf.sort((a, b) => a.valor < b.valor ? -1 : true);
-   return [valoresDoCpf[0], valoresDoCpf.at(-1)]
-}
-
-console.log(recuperarMaiorMenorLancamentos("93975495022", teste));
+  valoresDoCpf = lancamentos.filter((lancamento) => lancamento.cpf === cpf);
+  valoresDoCpf.sort((a, b) => a.valor - b.valor);
+  return valoresDoCpf.length < 1
+    ? valoresDoCpf
+    : [valoresDoCpf[0], valoresDoCpf.at(-1)];
+};
 
 const recuperarMaioresSaldos = (lancamentos) => {
-   return []
-}
+  saldosPorConta = recuperarSaldosPorConta(lancamentos);
+  saldosPorConta.sort((a, b) => b.valor - a.valor);
+  return saldosPorConta.slice(0, 3);
+};
 
 const recuperarMaioresMedias = (lancamentos) => {
-    return []
-}
+  cpfEValores = recuperarLancamentosPorCpf(lancamentos);
+  maioresMedias = [];
+
+  Object.keys(cpfEValores).forEach((cpf, index) => {
+    valoresIterados = Object.values(cpfEValores)[index];
+    valor = (
+      valoresIterados.reduce((acc, curr) => acc + curr) / valoresIterados.length
+    ).toFixed(2);
+    maioresMedias.push({
+      cpf,
+      valor,
+    });
+  });
+  return maioresMedias.sort((a, b) => b.valor - a.valor).slice(0, 3);
+};
